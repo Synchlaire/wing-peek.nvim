@@ -12,8 +12,9 @@
  *
  * Typography:
  *   • Lettera Mono LL → headings (the archival display face)
- *   • Geist Sans      → body prose
- *   • Geist Mono      → code, kbd, monospace inline
+ *   • Geist            → body prose (installed family name is just
+ *                        "Geist", not "Geist Sans")
+ *   • Geist Mono       → code, kbd, monospace inline
  */
 
 /* ─────────────────────────────────────────────────────────────────
@@ -115,7 +116,7 @@ body {
 .markdown-body {
   background: var(--wing-bg);
   color: var(--wing-fg);
-  font-family: 'Geist Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 15px;
   line-height: 1.7;
   word-wrap: break-word;
@@ -146,7 +147,10 @@ body {
 .markdown-body h5,
 .markdown-body h6 {
   font-family: 'Lettera Mono LL', 'Courier New', monospace;
-  font-weight: 400;
+  /* Lettera Mono LL ships Light / Regular / Medium / italics only —
+   * no Bold. We use Medium (500) for all headings to match quickshell
+   * display treatment; larger sizes carry the hierarchy, not weight. */
+  font-weight: 500;
   color: var(--wing-fg);
   margin-top: 2em;
   margin-bottom: 0.6em;
