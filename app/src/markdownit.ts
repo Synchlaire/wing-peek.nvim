@@ -1,4 +1,19 @@
-import { hashCode, uniqueIdGen } from './util.ts';
+// wing-peek markdown renderer.
+//
+// Diverges from upstream peek:
+//   - Removed: markdown-it-texmath + KaTeX (no LaTeX math).
+//   - Removed: mermaid handling in the fence rule.
+//   - Kept: highlight.js for syntax highlighting (a shiki swap was
+//     attempted but shiki's onig engine imports `node:buffer` which
+//     deno-emit can't resolve, and shiki pulls in every grammar at
+//     bundle time even with a narrow `langs` list — both blockers
+//     would need a much deeper plumbing rewrite to fix). highlight.js
+//     output gets themed by wing-markdown.css instead.
+//
+// What's still here: emoji, footnotes, task lists, line tracking
+// (data-line-begin), heading IDs, in-page anchor link handling.
+
+import { uniqueIdGen } from './util.ts';
 import { parseArgs } from 'https://deno.land/std@0.217.0/cli/parse_args.ts';
 import { default as highlight } from 'https://cdn.skypack.dev/highlight.js@11.9.0';
 // @deno-types="https://esm.sh/v135/@types/markdown-it@13.0.7/index.d.ts";
@@ -6,8 +21,6 @@ import MarkdownIt from 'https://esm.sh/markdown-it@14.0.0';
 import { full as MarkdownItEmoji } from 'https://esm.sh/markdown-it-emoji@3.0.0';
 import { default as MarkdownItFootnote } from 'https://esm.sh/markdown-it-footnote@4.0.0';
 import { default as MarkdownItTaskLists } from 'https://esm.sh/markdown-it-task-lists@2.1.1';
-import { default as MarkdownItTexmath } from 'https://esm.sh/markdown-it-texmath@1.0.0';
-import Katex from 'https://esm.sh/katex@0.16.9';
 
 const __args = parseArgs(Deno.args);
 
@@ -24,21 +37,12 @@ const md = new MarkdownIt('default', {
         return code;
       }
     }
-
     return '';
   }),
-}).use(MarkdownItEmoji)
+})
+  .use(MarkdownItEmoji)
   .use(MarkdownItFootnote)
-  .use(MarkdownItTaskLists, { enabled: false, label: true })
-  .use(MarkdownItTexmath, {
-    engine: Katex,
-    delimiters: ['gitlab', 'dollars'],
-    katexOptions: {
-      macros: { '\\R': '\\mathbb{R}' },
-      strict: false,
-      throwOnError: false,
-    },
-  });
+  .use(MarkdownItTaskLists, { enabled: false, label: true });
 
 md.renderer.rules.link_open = (tokens, idx, options) => {
   const token = tokens[idx];
@@ -67,67 +71,6 @@ md.renderer.rules.heading_open = (tokens, idx, options) => {
 
   return md.renderer.renderToken(tokens, idx, options);
 };
-
-md.renderer.rules.math_block = (() => {
-  const math_block = md.renderer.rules.math_block!;
-
-  return (tokens, idx, options, env, self) => {
-    return `
-      <div
-        data-line-begin="${tokens[idx].attrGet('data-line-begin')}"
-      >
-        ${math_block(tokens, idx, options, env, self)}
-      </div>
-    `;
-  };
-})();
-
-md.renderer.rules.math_block_eqno = (() => {
-  const math_block_eqno = md.renderer.rules.math_block_eqno!;
-
-  return (tokens, idx, options, env, self) => {
-    return `
-      <div
-        data-line-begin="${tokens[idx].attrGet('data-line-begin')}"
-      >
-        ${math_block_eqno(tokens, idx, options, env, self)}
-      </div>
-    `;
-  };
-})();
-
-md.renderer.rules.fence = (() => {
-  const fence = md.renderer.rules.fence!;
-  const escapeHtml = md.utils.escapeHtml;
-  const regex = new RegExp(
-    /^(?<frontmatter>---[\s\S]+---)?\s*(?<content>(?<charttype>flowchart|sequenceDiagram|gantt|classDiagram|stateDiagram|pie|journey|C4Context|erDiagram|requirementDiagram|gitGraph)[\s\S]+)/,
-  );
-
-  return (tokens, idx, options, env, self) => {
-    const token = tokens[idx];
-    const content = token.content.trim();
-
-    if (regex.test(content)) {
-      const match = regex.exec(content);
-      return `
-        <div
-          class="peek-mermaid-container"
-          data-line-begin="${token.attrGet('data-line-begin')}"
-        >
-          <div
-            id="graph-mermaid-${env.genId(hashCode(content))}"
-            data-graph="mermaid"
-            data-graph-definition="${escapeHtml(match?.groups?.content || '')}"
-          >
-            <div class="peek-loader"></div>
-          </div>
-        </div>
-      `;
-    }
-
-    return fence(tokens, idx, options, env, self);
-  };
-})();
 
 export function render(markdown: string) {
   const tokens = md.parse(markdown, {});
