@@ -1,104 +1,91 @@
 /*
  * wing-markdown.css
  * ─────────────────
- * Hand-written markdown stylesheet for wing-peek.nvim, replacing the
- * upstream github-markdown.min.css fetch. Built around the Wing OS
- * design system "The Living Archive": permacomputing aesthetic, 95%
- * monochrome, 0px corners, 1px borders, no shadows, no gradients.
+ * Hand-written markdown stylesheet for wing-peek.nvim. Built against
+ * the Wing OS "Technical Archivist" spec (wingos.md) — Permacomputing
+ * aesthetic, 95% monochrome, 0px corners, 1px borders, no shadows,
+ * no gradients, no easing.
  *
  * Two atmospheric variants are scoped under [data-theme]:
- *   • Voodoo  ([data-theme=dark])  → #000 abyss + cool white accents
- *   • LittleWing ([data-theme=light]) → #edeaea parchment + dark accents
+ *   • Void ([data-theme=dark])  → #000000 abyss — high-focus terminal
+ *   • Warm ([data-theme=light]) → #edeaea parchment — long-form reading
  *
- * Typography:
- *   • Lettera Mono LL → headings (the archival display face)
- *   • Geist            → body prose (installed family name is just
- *                        "Geist", not "Geist Sans")
- *   • Geist Mono       → code, kbd, monospace inline
+ * Typography (per spec §3):
+ *   • Test Signifier (serif) → headings, italic for narrative moments
+ *   • Geist Mono             → body prose, navigation, technical data,
+ *                              code, log streams — the monospace voice
  */
 
 /* ─────────────────────────────────────────────────────────────────
- * Design tokens — The Void palette
+ * Design tokens — The Void scale (wingos.md §3)
  *
- * Sourced directly from the wing-os design system token files:
- *   tokens/void-dark.json   → Voodoo (dark)
- *   tokens/littlewing.json  → LittleWing (light)
- *
- * Ten-step monochrome ramp (void-0 … void-6) + two border weights +
- * four semantic accents. Accents are only ever used semantically
- * (success/error/info/focus) — never decoratively. Hierarchy comes
- * from weight and opacity, not color.
+ * Ten-step monochrome ramp (void-0 … void-6) plus three muted
+ * accents. Borders use void-2 / void-3 per spec. Accents are
+ * desaturated — no neon. Color is only ever semantic.
  * ───────────────────────────────────────────────────────────────── */
 
 [data-theme='dark'] {
-  /* Monochrome ramp (void-0 = surface, void-6 = primary text) */
-  --void-0:   #000000;
-  --void-05:  #0a0a0a;
-  --void-1:   #111111;
-  --void-15:  #1a1a1a;
-  --void-2:   #2a2a2a;
-  --void-3:   #383838;
-  --void-4:   #6a6a6a;
-  --void-5:   #949494;
-  --void-55:  #b8b8b8;
-  --void-6:   #ebebeb;
+  /* Monochrome ramp — The Void */
+  --void-0:   #000000;  /* background */
+  --void-05:  #0a0a0a;  /* near-black surface */
+  --void-1:   #111111;  /* surface */
+  --void-15:  #1a1a1a;  /* elevated surface */
+  --void-2:   #2a2a2a;  /* subtle border */
+  --void-3:   #383838;  /* border / divider */
+  --void-4:   #6a6a6a;  /* text hint, metadata */
+  --void-5:   #949494;  /* text secondary */
+  --void-55:  #b8b8b8;  /* text secondary bright */
+  --void-6:   #ebebeb;  /* text primary */
 
-  /* Borders — subtle for structure, active for focus */
-  --wing-border:        #333333;
-  --wing-border-focus:  #666666;
-
-  /* Semantic accents — 5% of surface at most */
-  --wing-focus:    #c0c8d0; /* cool white — links, focus rings */
-  --wing-success:  #00ff41;
-  --wing-error:    #ff3366;
-  --wing-info:     #00bfff;
+  /* Muted accents — no neon, no decoration */
+  --wing-focus:     #5b98c0;  /* active states, primary indicators */
+  --wing-positive:  #5aad68;  /* success, status nominal */
+  --wing-negative:  #c45858;  /* critical errors, unauthorized */
 }
 
 [data-theme='light'] {
-  /* Monochrome ramp — inverted for parchment */
-  --void-0:   #edeaea;
-  --void-05:  #e8e8e8;
-  --void-1:   #dcdcdc;
-  --void-15:  #d0d0d0;
-  --void-2:   #c0c0c0;
-  --void-3:   #a8a8a8;
-  --void-4:   #787878;
-  --void-5:   #505050;
-  --void-55:  #303030;
-  --void-6:   #141414;
+  /* Warm parchment — ramp inverted */
+  --void-0:   #edeaea;  /* warm-bg, primary surface */
+  --void-05:  #e4e1e1;
+  --void-1:   #dcd9d9;
+  --void-15:  #d3d0d0;
+  --void-2:   #c4c1c1;  /* subtle border */
+  --void-3:   #a8a5a5;  /* border / divider */
+  --void-4:   #787575;  /* text hint */
+  --void-5:   #4f4c4c;  /* text secondary */
+  --void-55:  #2f2c2c;  /* text secondary bright */
+  --void-6:   #141414;  /* text primary */
 
-  --wing-border:        #c0c0c0;
-  --wing-border-focus:  #787878;
-
-  --wing-focus:    #606870;
-  --wing-success:  #00cc33;
-  --wing-error:    #d92d57;
-  --wing-info:     #009fd4;
+  /* Same muted accents — they read well against both surfaces */
+  --wing-focus:     #3d7a9e;
+  --wing-positive:  #3e8a4a;
+  --wing-negative:  #a23a3a;
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * Semantic aliases — shared across themes, resolve via the ramp.
- * Components should use these, not raw --void-* steps.
+ * Semantic aliases — components should use these, not raw --void-*.
  *
- * Hard rule: Unified Surface — sidebars, body, elevated regions all
- * share --wing-bg (void-0). Code/table headers lift ONE step to
- * void-1, never more. No stacking surfaces, no soft depth.
+ * Unified Surface: sidebars, body, and elevated regions all share
+ * --wing-bg (void-0). Code blocks and table headers lift ONE step
+ * to void-1, never further. Hierarchy comes from 1px dividers, not
+ * surface depth.
+ *
+ * Mechanical Feedback: no transitions, no easing. State changes are
+ * instantaneous — digital precision, not soft animation.
  * ───────────────────────────────────────────────────────────────── */
 
 :root,
 [data-theme] {
-  --wing-bg:           var(--void-0);   /* primary surface */
-  --wing-bg-raised:    var(--void-1);   /* code blocks, table headers */
-  --wing-bg-hover:     var(--void-15);  /* transient hover only */
+  --wing-bg:          var(--void-0);
+  --wing-bg-raised:   var(--void-1);
 
-  --wing-fg:           var(--void-6);   /* primary text */
-  --wing-fg-muted:     var(--void-55);  /* secondary text */
-  --wing-fg-faint:     var(--void-4);   /* metadata, markers */
-  --wing-fg-ghost:     var(--void-3);   /* disabled, horizontal rules */
+  --wing-fg:          var(--void-6);   /* primary text */
+  --wing-fg-muted:    var(--void-55);  /* secondary text */
+  --wing-fg-faint:    var(--void-4);   /* metadata, markers */
+  --wing-fg-ghost:    var(--void-3);   /* disabled, dividers */
 
-  /* Motion — 120-250ms eased, never bouncy */
-  --wing-transition-fast: 120ms ease-out;
-  --wing-transition:      180ms ease-out;
+  --wing-border:        var(--void-3); /* 1px dividers */
+  --wing-border-subtle: var(--void-2); /* inner-group separators */
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -116,9 +103,12 @@ body {
 .markdown-body {
   background: var(--wing-bg);
   color: var(--wing-fg);
-  font-family: 'Geist', 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.7;
+  /* Per wingos.md §3: monospace body prose — navigation, data, log
+   * streams, code, EVERYTHING except headings is Geist Mono. This
+   * reads as an archival terminal rather than a web document. */
+  font-family: 'Geist Mono', 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 1.65;
   word-wrap: break-word;
 
   box-sizing: border-box;
@@ -146,16 +136,17 @@ body {
 .markdown-body h4,
 .markdown-body h5,
 .markdown-body h6 {
-  font-family: 'Lettera Mono LL', 'Courier New', monospace;
-  /* Lettera Mono LL ships Light / Regular / Medium / italics only —
-   * no Bold. We use Medium (500) for all headings to match quickshell
-   * display treatment; larger sizes carry the hierarchy, not weight. */
-  font-weight: 500;
+  /* Per wingos.md §3: a serif voice for headings — the "human"
+   * narrative counterpoint to the monospace body. Test Signifier is
+   * the trial release installed on this system; NType 82 Headline
+   * is a display-weight sans fallback. */
+  font-family: 'Test Signifier', 'NType 82 Headline', Georgia, serif;
+  font-weight: 400;
   color: var(--wing-fg);
   margin-top: 2em;
-  margin-bottom: 0.6em;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
+  margin-bottom: 0.5em;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
 }
 
 .markdown-body h1:first-child,
@@ -165,22 +156,29 @@ body {
 }
 
 .markdown-body h1 {
-  font-size: 2.2em;
-  padding-bottom: 0.4em;
-  border-bottom: 1px solid var(--wing-border);
-}
-
-.markdown-body h2 {
-  font-size: 1.65em;
+  font-size: 2.4em;  /* ~34px at 14px body — primary title scale */
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--wing-border);
 }
 
-.markdown-body h3 { font-size: 1.35em; }
+.markdown-body h2 {
+  font-size: 1.8em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--wing-border-subtle);
+}
+
+.markdown-body h3 { font-size: 1.4em; }
 .markdown-body h4 { font-size: 1.15em; }
 .markdown-body h5 { font-size: 1em; }
+
+/* h6 acts as a label — drop back to monospace, uppercase, muted.
+ * Log-stream label tier, per spec §4 "Log Streams". */
 .markdown-body h6 {
-  font-size: 0.9em;
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--wing-fg-muted);
 }
 
@@ -238,8 +236,7 @@ body {
   color: var(--wing-focus);
   text-decoration: none;
   border-bottom: 1px solid var(--wing-border);
-  transition: border-color var(--wing-transition),
-              color var(--wing-transition);
+  /* No transition — mechanical feedback, instant state changes. */
 }
 
 .markdown-body a:hover,
@@ -323,9 +320,13 @@ body {
 .markdown-body blockquote {
   margin: 0 0 1.2em;
   padding: 0.4em 1.2em;
-  border-left: 1px solid var(--wing-border-focus);
+  border-left: 1px solid var(--wing-border);
   color: var(--wing-fg-muted);
+  /* Blockquotes ARE the "narrative" moment — use the serif italic
+   * voice from wingos.md §3, distinct from the monospace body. */
+  font-family: 'Test Signifier', Georgia, serif;
   font-style: italic;
+  font-size: 1.05em;
 }
 
 .markdown-body blockquote > :first-child { margin-top: 0; }
@@ -663,13 +664,13 @@ body {
 .markdown-body .hljs-emphasis { font-style: italic; }
 .markdown-body .hljs-strong   { font-weight: 600; }
 
-/* Additions/deletions in diff blocks — use semantic tokens */
+/* Additions/deletions in diff blocks — muted semantic accents */
 .markdown-body .hljs-addition {
-  color: var(--wing-success);
+  color: var(--wing-positive);
   background: transparent;
 }
 
 .markdown-body .hljs-deletion {
-  color: var(--wing-error);
+  color: var(--wing-negative);
   background: transparent;
 }
