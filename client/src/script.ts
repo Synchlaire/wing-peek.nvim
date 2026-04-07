@@ -56,7 +56,22 @@ addEventListener('DOMContentLoaded', () => {
     },
   };
 
-  if (peek.theme) body.setAttribute('data-theme', peek.theme);
+  // Theme: initial value comes from peek.theme (setup opt), but a
+  // localStorage override wins if the user has toggled manually in a
+  // previous session. Press `t` in the webview to flip.
+  const theme = {
+    current: (localStorage.getItem('theme') || peek.theme || 'dark') as 'dark' | 'light',
+    apply() {
+      body.setAttribute('data-theme', this.current);
+    },
+    toggle() {
+      this.current = this.current === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', this.current);
+      this.apply();
+    },
+  };
+  theme.apply();
+
   if (peek.ctx === 'webview') zoom.init();
 
   document.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -84,6 +99,7 @@ addEventListener('DOMContentLoaded', () => {
       'G': () => {
         window.scrollTo({ top: document.body.scrollHeight });
       },
+      't': theme.toggle.bind(theme),
     };
     const action = event.ctrlKey && peek.ctx === 'webview' ? ctrl[event.key] : plain[event.key];
     if (action) {
