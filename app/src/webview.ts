@@ -7,12 +7,26 @@ try {
   const win = new WebUI();
   win.setSize(960, 720);
 
-  // Build the HTTP URL from the server address. Pass config as query
-  // params — the client's getInjectConfig() reads them when
-  // window.peek isn't available.
   const previewUrl = `http://${serverUrl}/?theme=${encodeURIComponent(theme)}`;
 
-  const ok = win.showWebView(previewUrl);
+  // Wrapper HTML with webui.js bridge (keeps the window alive) and
+  // an iframe loading the actual preview from the peek server.
+  const html = `<html>
+<head>
+<meta charset="utf-8">
+<script src="webui.js"></script>
+<style>
+  * { margin: 0; padding: 0; }
+  body { overflow: hidden; }
+  iframe { width: 100vw; height: 100vh; border: none; display: block; }
+</style>
+</head>
+<body>
+<iframe src="${previewUrl}"></iframe>
+</body>
+</html>`;
+
+  const ok = win.showWebView(html);
   if (!ok) {
     console.error('[wing-peek] showWebView failed, falling back to show()');
     await win.show(previewUrl);
