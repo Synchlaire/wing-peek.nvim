@@ -72,7 +72,7 @@ addEventListener('DOMContentLoaded', () => {
   };
   theme.apply();
 
-  if (peek.ctx === 'webview') zoom.init();
+  zoom.init();
 
   document.addEventListener('keydown', (event: KeyboardEvent) => {
     const ctrl: Record<string, () => void> = {
@@ -82,10 +82,10 @@ addEventListener('DOMContentLoaded', () => {
     };
     const plain: Record<string, () => void> = {
       'j': () => {
-        window.scrollBy({ top: 50, behavior: 'smooth' });
+        window.scrollBy({ top: 50 });
       },
       'k': () => {
-        window.scrollBy({ top: -50, behavior: 'smooth' });
+        window.scrollBy({ top: -50 });
       },
       'd': () => {
         window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
@@ -100,8 +100,11 @@ addEventListener('DOMContentLoaded', () => {
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       },
       't': theme.toggle.bind(theme),
+      '=': zoom.up.bind(zoom),
+      '-': zoom.down.bind(zoom),
+      '0': zoom.reset.bind(zoom),
     };
-    const action = event.ctrlKey && peek.ctx === 'webview' ? ctrl[event.key] : plain[event.key];
+    const action = event.ctrlKey ? ctrl[event.key] : plain[event.key];
     if (action) {
       event.preventDefault();
       action();
@@ -247,9 +250,15 @@ addEventListener('DOMContentLoaded', () => {
       const pixPerLine = (offsetEnd - offsetBegin) / (lineEnd - lineBegin);
       const scrollPix = (data.line - lineBegin) * pixPerLine;
 
+      const targetTop = offsetBegin + scrollPix - window.innerHeight / 2 + pixPerLine / 2;
+      const distance = Math.abs(targetTop - window.scrollY);
+
+      // Small jumps (< 1 screen) snap instantly to avoid stacking
+      // smooth animations on rapid cursor movement. Big jumps get
+      // smooth scroll so you can track where you landed.
       window.scroll({
-        top: offsetBegin + scrollPix - window.innerHeight / 2 + pixPerLine / 2,
-        behavior: 'smooth',
+        top: targetTop,
+        behavior: distance > window.innerHeight ? 'smooth' : 'instant',
       });
 
       // Heading anchor glow — if we landed on a heading, briefly
