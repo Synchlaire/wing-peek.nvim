@@ -69,6 +69,16 @@ async function init(socket: WebSocket) {
 (() => {
   const app = __args['app'] ? JSON.parse(__args['app']) : 'webview';
 
+  async function findFile(url: string) {
+    const path = new URL(url).pathname.replace(/^\//, '') || 'index.html';
+
+    for (const base of [Deno.mainModule, 'file:']) {
+      try {
+        return await Deno.open(new URL(path, base));
+      } catch (_) { /**/ }
+    }
+  }
+
   if (app === 'webview') {
     const onListen: Deno.ServeOptions['onListen'] = ({ hostname, port }) => {
       const serverUrl = `${hostname.replace('0.0.0.0', 'localhost')}:${port}`;
@@ -81,7 +91,6 @@ async function init(socket: WebSocket) {
           '-A',
           '--no-check',
           webviewSrc,
-          `--url=${new URL('index.html', Deno.mainModule).href}`,
           `--theme=${__args['theme']}`,
           `--serverUrl=${serverUrl}`,
         ],
@@ -96,27 +105,21 @@ async function init(socket: WebSocket) {
       });
     };
 
-    Deno.serve({ port: 0, onListen }, (request) => {
-      const { socket, response } = Deno.upgradeWebSocket(request);
+    Deno.serve({ port: 0, onListen }, async (request) => {
+      const upgrade = request.headers.get('upgrade') || '';
 
-      socket.onopen = () => {
-        init(socket);
-      };
+      if (upgrade.toLowerCase() === 'websocket') {
+        const { socket, response } = Deno.upgradeWebSocket(request);
+        socket.onopen = () => { init(socket); };
+        return response;
+      }
 
-      return response;
+      // Serve static files (index.html, CSS, JS) for the webview.
+      const file = await findFile(request.url);
+      return new Response(file?.readable || 'Not Found', { status: file ? 200 : 404 });
     });
 
     return;
-  }
-
-  async function findFile(url: string) {
-    const path = new URL(url).pathname.replace(/^\//, '') || 'index.html';
-
-    for (const base of [Deno.mainModule, 'file:']) {
-      try {
-        return await Deno.open(new URL(path, base));
-      } catch (_) { /**/ }
-    }
   }
 
   const onListen: Deno.ServeOptions['onListen'] = ({ hostname, port }) => {
