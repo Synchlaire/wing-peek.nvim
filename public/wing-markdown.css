@@ -4,7 +4,7 @@
  * Hand-written markdown stylesheet for wing-peek.nvim. Built against
  * the Wing OS "Technical Archivist" spec (wingos.md) — Permacomputing
  * aesthetic, 95% monochrome, 0px corners, 1px borders, no shadows,
- * no gradients, no easing.
+ * no gradients. Transitions are linear-only (mechanical, not soft).
  *
  * Two atmospheric variants are scoped under [data-theme]:
  *   • Void ([data-theme=dark])  → #000000 abyss — high-focus terminal
@@ -41,6 +41,9 @@
   --wing-focus:     #5b98c0;  /* active states, primary indicators */
   --wing-positive:  #5aad68;  /* success, status nominal */
   --wing-negative:  #c45858;  /* critical errors, unauthorized */
+
+  --wing-bg-hover:  #1a1a1a;  /* selection, mark highlight */
+  --wing-mark:      rgba(91, 152, 192, 0.15);  /* <mark> — focus at 15% */
 }
 
 [data-theme='light'] {
@@ -60,6 +63,9 @@
   --wing-focus:     #3d7a9e;
   --wing-positive:  #3e8a4a;
   --wing-negative:  #a23a3a;
+
+  --wing-bg-hover:  #d3d0d0;  /* selection, mark highlight */
+  --wing-mark:      rgba(61, 122, 158, 0.15);  /* <mark> — focus at 15% */
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -70,8 +76,8 @@
  * to void-1, never further. Hierarchy comes from 1px dividers, not
  * surface depth.
  *
- * Mechanical Feedback: no transitions, no easing. State changes are
- * instantaneous — digital precision, not soft animation.
+ * Mechanical Feedback: transitions are linear-only (150ms) — digital
+ * precision, not soft animation. No easing curves, no spring physics.
  * ───────────────────────────────────────────────────────────────── */
 
 :root,
@@ -127,7 +133,7 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * Headings — Lettera Mono LL, the archival display voice
+ * Headings — Test Signifier, the narrative serif voice
  * ───────────────────────────────────────────────────────────────── */
 
 .markdown-body h1,
@@ -216,9 +222,9 @@ body {
 }
 
 .markdown-body mark {
-  background: var(--wing-bg-hover);
+  background: var(--wing-mark);
   color: var(--wing-fg);
-  padding: 0 0.2em;
+  padding: 0.05em 0.25em;
 }
 
 .markdown-body del,
@@ -327,10 +333,20 @@ body {
   font-family: 'Test Signifier', Georgia, serif;
   font-style: italic;
   font-size: 1.05em;
+  /* Hanging punctuation — shift opening quotes into the margin so
+   * the text edge stays flush. Editorial typographic detail. */
+  hanging-punctuation: first;
+  text-indent: -0.4em;
 }
 
 .markdown-body blockquote > :first-child { margin-top: 0; }
 .markdown-body blockquote > :last-child { margin-bottom: 0; }
+
+/* Nested blockquotes dim progressively — visual depth. */
+.markdown-body blockquote blockquote {
+  border-left-color: var(--wing-border-subtle);
+  color: var(--wing-fg-faint);
+}
 
 /* GitHub/Obsidian callout admonitions:
  *   > [!NOTE] header
@@ -403,6 +419,26 @@ body {
   display: block;
 }
 
+/* Code block language label — faint monospace tag in the top-right
+ * corner. Shown via data-language attribute set by markdownit.ts. */
+.markdown-body pre[data-language] {
+  position: relative;
+}
+
+.markdown-body pre[data-language]::after {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.5em;
+  right: 0.8em;
+  font-family: 'Geist Mono', monospace;
+  font-size: 0.7em;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--wing-fg-faint);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 /* Shiki emits <pre class="shiki shiki-themes wing-dark wing-light">.
  * It uses inline `style` attributes plus CSS variables when we pass
  * `defaultColor: false`, so we surface those vars here. */
@@ -470,25 +506,49 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────
- * Horizontal rule — single 1px divider, no shadow
+ * Horizontal rule — typographic section divider
  * ───────────────────────────────────────────────────────────────── */
 
+/* HR as a breathing moment — a typographic ornament rather than a
+ * hard line. Three centered dots: archival section divider. */
 .markdown-body hr {
-  height: 0;
-  margin: 2em 0;
+  height: auto;
+  margin: 2.5em 0;
   border: 0;
-  border-top: 1px solid var(--wing-border);
+  text-align: center;
+  color: var(--wing-fg-faint);
+  font-family: 'Geist Mono', monospace;
+  font-size: 1em;
+  letter-spacing: 0.6em;
+  line-height: 1;
+}
+
+.markdown-body hr::after {
+  content: '···';
 }
 
 /* ─────────────────────────────────────────────────────────────────
  * Images, figures
  * ───────────────────────────────────────────────────────────────── */
 
+/* Images — 1px border, raised surface placeholder. While loading,
+ * a faint border pulse gives presence before the image arrives. */
+@keyframes img-pulse {
+  0%, 100% { border-color: var(--wing-border); }
+  50%      { border-color: var(--wing-border-subtle); }
+}
+
 .markdown-body img {
   max-width: 100%;
   height: auto;
   border: 1px solid var(--wing-border);
   background: var(--wing-bg-raised);
+  animation: img-pulse 2s linear infinite;
+}
+
+/* Stop pulsing once loaded (class added by client script). */
+.markdown-body img.peek-loaded {
+  animation: none;
 }
 
 .markdown-body img[align='right'] { padding-left: 20px; }
@@ -527,10 +587,28 @@ body {
   font-size: 0.85em;
   color: var(--wing-fg-muted);
   letter-spacing: 0.02em;
+  list-style: none;
+}
+
+/* Custom disclosure marker — monospace triangles matching the
+ * archival voice. ▸ closed, ▾ open. */
+.markdown-body summary::-webkit-details-marker { display: none; }
+
+.markdown-body summary::before {
+  content: '▸ ';
+  color: var(--wing-fg-faint);
+}
+
+.markdown-body details[open] > summary::before {
+  content: '▾ ';
 }
 
 .markdown-body summary:hover {
   color: var(--wing-fg);
+}
+
+.markdown-body summary:hover::before {
+  color: var(--wing-focus);
 }
 
 .markdown-body details[open] summary {
@@ -560,6 +638,15 @@ body {
   margin-left: 0.4em;
   color: var(--wing-focus);
   border-bottom: none;
+}
+
+/* Footnote superscript refs — reward discovery with subtle hover. */
+.markdown-body sup a {
+  border-bottom: none;
+}
+
+.markdown-body sup a:hover {
+  border-bottom: 1px solid var(--wing-focus);
 }
 
 /* ─────────────────────────────────────────────────────────────────

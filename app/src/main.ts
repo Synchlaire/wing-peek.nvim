@@ -73,19 +73,14 @@ async function init(socket: WebSocket) {
     const onListen: Deno.ServeOptions['onListen'] = ({ hostname, port }) => {
       const serverUrl = `${hostname.replace('0.0.0.0', 'localhost')}:${port}`;
       logger.info(`listening on ${serverUrl}`);
+      const webviewSrc = join(__dirname, 'webview.ts');
       const webview = new Deno.Command('deno', {
-        cwd: dirname(fromFileUrl(Deno.mainModule)),
         args: [
           'run',
           '--quiet',
-          '--allow-read',
-          '--allow-write',
-          '--allow-env',
-          '--allow-net',
-          '--allow-ffi',
-          '--unstable',
+          '-A',
           '--no-check',
-          'webview.js',
+          webviewSrc,
           `--url=${new URL('index.html', Deno.mainModule).href}`,
           `--theme=${__args['theme']}`,
           `--serverUrl=${serverUrl}`,
@@ -94,6 +89,8 @@ async function init(socket: WebSocket) {
       });
 
       webview.output().then((status) => {
+        const stderr = new TextDecoder().decode(status.stderr);
+        if (stderr) logger.info(`webview stderr: ${stderr}`);
         logger.info(`webview closed, code: ${status.code}`);
         Deno.exit();
       });

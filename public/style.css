@@ -1,5 +1,6 @@
 /*
- * style.css — wing-peek webview chrome (scrollbar, loader, zoom label).
+ * style.css — wing-peek webview chrome (scrollbar, loader, zoom label,
+ * transitions, micro-interactions).
  *
  * This is the small layer of styling that ISN'T markdown content. The
  * markdown body itself is in wing-markdown.css. Everything here uses
@@ -27,9 +28,57 @@ body::-webkit-scrollbar-thumb:hover {
   background-color: var(--wing-focus);
 }
 
+body::-webkit-scrollbar-thumb:active {
+  background-color: var(--wing-focus);
+}
+
 .peek-body {
   margin: 0;
   padding: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Theme crossfade — pressing `t` dims the room rather than flipping
+ * a switch. 150ms linear, no easing — still mechanical, just not
+ * instantaneous.
+ * ───────────────────────────────────────────────────────────────── */
+
+body {
+  transition: background-color 150ms linear, color 150ms linear;
+}
+
+.markdown-body,
+.markdown-body pre,
+.markdown-body code,
+.markdown-body blockquote,
+.markdown-body table th,
+.markdown-body table tr,
+.markdown-body details,
+.markdown-body img,
+.markdown-body input[type='checkbox'],
+.markdown-body input[type='checkbox']:checked {
+  transition: background-color 150ms linear,
+              color 150ms linear,
+              border-color 150ms linear;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Content fade-in — document is developed/exposed, not teleported.
+ * 200ms linear (no easing). The loader dots fade out simultaneously.
+ * ───────────────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+#peek-markdown-body {
+  animation: fade-in 200ms linear both;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -64,6 +113,28 @@ body::-webkit-scrollbar-thumb:hover {
   animation-direction: alternate-reverse;
 }
 
+/* When content arrives, fade out the loader */
+.peek-loader.peek-loader--hidden {
+  animation: fade-out 150ms linear both;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Heading anchor glow — when editor scrolls to a heading, briefly
+ * pulse the left border with the accent color so you know where
+ * you landed. Applied via .peek-anchor-glow class from script.ts.
+ * ───────────────────────────────────────────────────────────────── */
+
+/* Uses inset box-shadow instead of border to avoid layout shift. */
+@keyframes anchor-glow {
+  0%   { box-shadow: inset 2px 0 0 var(--wing-focus); }
+  100% { box-shadow: inset 2px 0 0 transparent; }
+}
+
+.peek-anchor-glow {
+  animation: anchor-glow 800ms linear both;
+}
+
 /* ─────────────────────────────────────────────────────────────────
  * Zoom level indicator — appears top-right when zooming
  * ───────────────────────────────────────────────────────────────── */
@@ -82,4 +153,21 @@ body::-webkit-scrollbar-thumb:hover {
   font-weight: 400;
   letter-spacing: 0.05em;
   z-index: 9999;
+  transition: background-color 150ms linear,
+              border-color 150ms linear,
+              color 150ms linear;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+ * Reduced motion — respect the user's system preference. Strip all
+ * animation and transitions so nothing moves unexpectedly.
+ * ───────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

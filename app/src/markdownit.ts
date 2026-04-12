@@ -44,6 +44,18 @@ const md = new MarkdownIt('default', {
   .use(MarkdownItFootnote)
   .use(MarkdownItTaskLists, { enabled: false, label: true });
 
+// Fenced code blocks: add data-language to <pre> for the CSS language label.
+const defaultFence = md.renderer.rules.fence!.bind(md.renderer.rules);
+md.renderer.rules.fence = (tokens, idx, options, env, slf) => {
+  const token = tokens[idx];
+  const info = token.info ? token.info.trim().split(/\s+/)[0] : '';
+  let html = defaultFence(tokens, idx, options, env, slf);
+  if (info) {
+    html = html.replace(/^<pre/, `<pre data-language="${md.utils.escapeHtml(info)}"`);
+  }
+  return html;
+};
+
 md.renderer.rules.link_open = (tokens, idx, options) => {
   const token = tokens[idx];
   const href = token.attrGet('href');

@@ -82,22 +82,22 @@ addEventListener('DOMContentLoaded', () => {
     };
     const plain: Record<string, () => void> = {
       'j': () => {
-        window.scrollBy({ top: 50 });
+        window.scrollBy({ top: 50, behavior: 'smooth' });
       },
       'k': () => {
-        window.scrollBy({ top: -50 });
+        window.scrollBy({ top: -50, behavior: 'smooth' });
       },
       'd': () => {
-        window.scrollBy({ top: window.innerHeight / 2 });
+        window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
       },
       'u': () => {
-        window.scrollBy({ top: -window.innerHeight / 2 });
+        window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
       },
       'g': () => {
-        window.scrollTo({ top: 0 });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       },
       'G': () => {
-        window.scrollTo({ top: document.body.scrollHeight });
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       },
       't': theme.toggle.bind(theme),
     };
@@ -185,9 +185,28 @@ addEventListener('DOMContentLoaded', () => {
     mutationObserver.observe(markdownBody, { childList: true });
     resizeObserver.observe(markdownBody);
 
+    let firstRender = true;
+
     return (data: { html: string; lcount: number }) => {
       source = { lcount: data.lcount };
       morphdom(markdownBody, `<main>${data.html}</main>`, morphdomOptions);
+
+      // Fade out the loader on first content arrival.
+      if (firstRender) {
+        firstRender = false;
+        const loader = document.querySelector('.peek-loader');
+        if (loader) loader.classList.add('peek-loader--hidden');
+      }
+
+      // Mark images as loaded to stop the border-pulse skeleton.
+      markdownBody.querySelectorAll('img').forEach((img: HTMLImageElement) => {
+        if (img.complete) {
+          img.classList.add('peek-loaded');
+        } else {
+          img.addEventListener('load', () => img.classList.add('peek-loaded'), { once: true });
+          img.addEventListener('error', () => img.classList.add('peek-loaded'), { once: true });
+        }
+      });
     };
   })();
 
@@ -228,7 +247,22 @@ addEventListener('DOMContentLoaded', () => {
       const pixPerLine = (offsetEnd - offsetBegin) / (lineEnd - lineBegin);
       const scrollPix = (data.line - lineBegin) * pixPerLine;
 
-      window.scroll({ top: offsetBegin + scrollPix - window.innerHeight / 2 + pixPerLine / 2 });
+      window.scroll({
+        top: offsetBegin + scrollPix - window.innerHeight / 2 + pixPerLine / 2,
+        behavior: 'smooth',
+      });
+
+      // Heading anchor glow — if we landed on a heading, briefly
+      // pulse its left border so the user knows where they are.
+      if (target && /^H[1-6]$/.test(target.tagName)) {
+        target.classList.remove('peek-anchor-glow');
+        // Force reflow so re-adding the class restarts the animation.
+        void target.offsetWidth;
+        target.classList.add('peek-anchor-glow');
+        target.addEventListener('animationend', () => {
+          target.classList.remove('peek-anchor-glow');
+        }, { once: true });
+      }
     };
   })();
 });

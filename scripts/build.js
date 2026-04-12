@@ -54,7 +54,7 @@ if (DEBUG) {
 
 const result = await Promise.allSettled([
   emit('app/src/main.ts', 'public/main.bundle.js'),
-  emit('app/src/webview.ts', 'public/webview.js'),
+  // webview.ts runs from source (deno-webui uses FFI, can't be bundled)
   emit('client/src/script.ts', 'public/script.bundle.js'),
 ]);
 
